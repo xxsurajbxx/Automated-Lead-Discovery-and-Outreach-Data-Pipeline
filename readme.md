@@ -5,7 +5,8 @@ to install necessary modules:
     playwright install chromium
 
 Google in debug mode with port 9222:
-    /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir="$HOME/chrome-debug-profile"
+    macOS: /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir="$HOME/chrome-debug-profile"
+    linux: google-chrome --remote-debugging-port=9222 --user-data-dir="$HOME/chrome-debug-profile"
 
 run the scraper:
     source venv/bin/activate

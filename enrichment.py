@@ -1,4 +1,4 @@
-"""
+r"""
 LinkedIn Profile Scraper
 ========================
 Connects to your real Chrome browser via CDP (Chrome DevTools Protocol),
@@ -6,14 +6,16 @@ searches LinkedIn for each person in a CSV, emulates human scrolling,
 and saves the full HTML of the profile page.
 
 Usage:
-  1. Launch Chrome with remote debugging:
-       /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome
-         --remote-debugging-port=9222
+  1. Launch Chrome with remote debugging (macOS):
+       /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222
+  
+  2. Or on Linux:
+       google-chrome --remote-debugging-port=9222 --user-data-dir="$HOME/chrome-debug-profile"
 
-  2. Make sure you're logged into LinkedIn in that browser.
+  3. Make sure you're logged into LinkedIn in that browser.
 
-  3. Run the scraper:
-       python3 scraper.py --input people.csv
+  4. Run the scraper with cursor debug:
+       SHOW_CURSOR=1 python3 enrichment.py --input people.csv
 
   The CSV must have a column called "name" (case-insensitive).
   It may optionally have a "url" column with the LinkedIn profile URL.
@@ -33,6 +35,7 @@ from pathlib import Path
 from typing import Optional
 
 from playwright.async_api import async_playwright
+from human_behavior import HumanBehavior, show_cursor, DEBUG_CURSOR
 
 
 # ── constants ────────────────────────────────────────────────────────────
@@ -42,8 +45,8 @@ CDP_ENDPOINT = "http://127.0.0.1:9222"
 
 # Timing knobs (seconds) – tweak to taste
 MIN_WAIT, MAX_WAIT = 2, 5          # between major actions
-SCROLL_PAUSE_MIN, SCROLL_PAUSE_MAX = 0.4, 1.8
-SCROLLS_MIN, SCROLLS_MAX = 4, 10   # number of scroll movements per page
+SCROLL_PAUSE_MIN, SCROLL_PAUSE_MAX = 0.8, 2.5  # increased pause time
+SCROLLS_MIN, SCROLLS_MAX = 8, 16   # increased scroll movements per page
 
 
 # ── helpers ──────────────────────────────────────────────────────────────
@@ -62,24 +65,20 @@ async def human_delay(lo: float = MIN_WAIT, hi: float = MAX_WAIT) -> None:
 
 
 async def random_scroll(page) -> None:
-    """Scroll up and down randomly to mimic a real person browsing."""
+    """Scroll up and down randomly with natural behavior."""
     num_scrolls = random.randint(SCROLLS_MIN, SCROLLS_MAX)
-    for _ in range(num_scrolls):
-        # Mostly scroll down, occasionally scroll up
-        direction = random.choices(["down", "up"], weights=[0.75, 0.25])[0]
-        distance = random.randint(150, 700)
-        if direction == "up":
-            distance = -distance
-
-        await page.mouse.wheel(0, distance)
+    for i in range(num_scrolls):
+        direction = random.choices(["down", "up"], weights=[0.8, 0.2])[0]  # Mostly scroll down
+        await HumanBehavior.smooth_scroll(page, direction)
         await asyncio.sleep(random.uniform(SCROLL_PAUSE_MIN, SCROLL_PAUSE_MAX))
-
-    # Tiny random mouse movements to add realism
-    for _ in range(random.randint(1, 4)):
-        x = random.randint(100, 900)
-        y = random.randint(100, 600)
-        await page.mouse.move(x, y)
-        await asyncio.sleep(random.uniform(0.1, 0.4))
+        
+        # Occasionally do idle mouse movement
+        if i % 4 == 0 and random.random() > 0.5:
+            await HumanBehavior.random_idle_movement(page)
+    
+    # Sometimes hover over elements at the end
+    if random.random() > 0.4:
+        await HumanBehavior.hover_and_interact(page, "a, button, [role='button']")
 
 
 async def smooth_type(page, selector: str, text: str) -> None:
@@ -138,10 +137,14 @@ async def use_search_bar(page, query: str) -> None:
 
     # Click the "People" filter so results are scoped to profiles
     try:
-        people_btn = page.locator('button:has-text("People")').first
+        people_btn_selector = 'button:has-text("People")'
+        people_btn = page.locator(people_btn_selector).first
         await people_btn.wait_for(timeout=6_000)
         await human_delay(0.3, 0.8)
-        await people_btn.click()
+        
+        # Use natural click with mouse movement
+        await HumanBehavior.natural_click(page, people_btn_selector)
+        
         await page.wait_for_load_state("domcontentloaded")
         await human_delay(2, 4)
     except Exception:
@@ -156,11 +159,11 @@ async def click_matching_profile(page, slug: Optional[str]) -> bool:
     Returns True if a profile was successfully clicked.
     """
     try:
-        await page.wait_for_selector('a[href*="/in/"]', timeout=10_000)
+        await page.wait_for_selector('a[data-view-name="search-result-lockup-title"]', timeout=10_000)
     except Exception:
         return False
 
-    links = page.locator('a.app-aware-link[href*="/in/"]')
+    links = page.locator('a[data-view-name="search-result-lockup-title"]')
     count = await links.count()
 
     if slug:
@@ -170,8 +173,18 @@ async def click_matching_profile(page, slug: Optional[str]) -> bool:
             link_slug = extract_slug(href)
             if link_slug and link_slug == slug:
                 await human_delay(0.5, 1.5)
+                # Use natural click with mouse movement
+                box = await links.nth(idx).bounding_box()
+                if box:
+                    target_x = int(box['x'] + box['width'] / 2 + random.randint(-10, 10))
+                    target_y = int(box['y'] + box['height'] / 2 + random.randint(-10, 10))
+                    await HumanBehavior.natural_mouse_move(page, target_x, target_y)
+                    await asyncio.sleep(random.uniform(0.3, 0.7))
                 await links.nth(idx).click()
                 await page.wait_for_load_state("domcontentloaded")
+                # Re-enable cursor after navigation
+                if DEBUG_CURSOR:
+                    await show_cursor(page)
                 return True
 
         # Partial match (slug contained in href)
@@ -179,15 +192,35 @@ async def click_matching_profile(page, slug: Optional[str]) -> bool:
             href = (await links.nth(idx).get_attribute("href") or "").lower()
             if slug in href:
                 await human_delay(0.5, 1.5)
+                # Use natural click with mouse movement
+                box = await links.nth(idx).bounding_box()
+                if box:
+                    target_x = int(box['x'] + box['width'] / 2 + random.randint(-10, 10))
+                    target_y = int(box['y'] + box['height'] / 2 + random.randint(-10, 10))
+                    await HumanBehavior.natural_mouse_move(page, target_x, target_y)
+                    await asyncio.sleep(random.uniform(0.3, 0.7))
                 await links.nth(idx).click()
                 await page.wait_for_load_state("domcontentloaded")
+                # Re-enable cursor after navigation
+                if DEBUG_CURSOR:
+                    await show_cursor(page)
                 return True
 
     # Fallback: click the first result
     if count > 0:
         await human_delay(0.5, 1.5)
+        # Use natural click with mouse movement
+        box = await links.first.bounding_box()
+        if box:
+            target_x = int(box['x'] + box['width'] / 2 + random.randint(-10, 10))
+            target_y = int(box['y'] + box['height'] / 2 + random.randint(-10, 10))
+            await HumanBehavior.natural_mouse_move(page, target_x, target_y)
+            await asyncio.sleep(random.uniform(0.3, 0.7))
         await links.first.click()
         await page.wait_for_load_state("domcontentloaded")
+        # Re-enable cursor after navigation
+        if DEBUG_CURSOR:
+            await show_cursor(page)
         return True
 
     return False
@@ -201,10 +234,15 @@ async def scrape_person(page, name: str, url: Optional[str] = None) -> None:
 
     # ── use the in‑page search bar ──
     await use_search_bar(page, name)
+    
+    # Re-enable cursor after search page loads
+    if DEBUG_CURSOR:
+        await show_cursor(page)
 
     # Wait for the results container
+
     try:
-        await page.wait_for_selector("div.search-results-container", timeout=15_000)
+        await page.wait_for_selector('[data-view-name="people-search-result"]', timeout=15_000)
     except Exception:
         print(f"    ⚠ Search results not found for '{name}', saving page anyway.")
 
@@ -216,7 +254,8 @@ async def scrape_person(page, name: str, url: Optional[str] = None) -> None:
     clicked = await click_matching_profile(page, slug)
     if clicked:
         await human_delay(3, 6)
-        await random_scroll(page)
+        # Simulate natural reading on the profile page
+        await HumanBehavior.simulate_reading(page)
         await human_delay(1, 2)
     else:
         print(f"    ⚠ Could not click into a profile for '{name}', saving search page.")
@@ -275,6 +314,10 @@ async def main(csv_path: str) -> None:
         # Start on LinkedIn feed so the search bar is available
         await page.goto(LINKEDIN_HOME, wait_until="domcontentloaded")
         await human_delay(2, 4)
+        
+        # Enable cursor visibility for debugging if requested
+        if DEBUG_CURSOR:
+            await show_cursor(page)
 
         for i, person in enumerate(people, 1):
             print(f"\n[{i}/{len(people)}]")
