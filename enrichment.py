@@ -8,7 +8,7 @@ and saves the full HTML of the profile page.
 Usage:
   1. Launch Chrome with remote debugging (macOS):
        /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222
-  
+
   2. Or on Linux:
        google-chrome --remote-debugging-port=9222 --user-data-dir="$HOME/chrome-debug-profile"
 
@@ -46,7 +46,7 @@ CDP_ENDPOINT = "http://127.0.0.1:9222"
 # Timing knobs (seconds) – tweak to taste
 MIN_WAIT, MAX_WAIT = 2, 5          # between major actions
 SCROLL_PAUSE_MIN, SCROLL_PAUSE_MAX = 0.8, 2.5  # increased pause time
-SCROLLS_MIN, SCROLLS_MAX = 8, 16   # increased scroll movements per page
+SCROLLS_MIN, SCROLLS_MAX = 4, 7    # scroll movements per page
 
 
 # ── helpers ──────────────────────────────────────────────────────────────
@@ -66,19 +66,26 @@ async def human_delay(lo: float = MIN_WAIT, hi: float = MAX_WAIT) -> None:
 
 async def random_scroll(page) -> None:
     """Scroll up and down randomly with natural behavior."""
+    # Drift mouse naturally to the center of the page content so wheel events hit the scrollable area
+    await HumanBehavior.natural_mouse_move(page, random.randint(400, 700), random.randint(350, 500))
+    await asyncio.sleep(random.uniform(0.2, 0.4))
+
     num_scrolls = random.randint(SCROLLS_MIN, SCROLLS_MAX)
+    print(f"    📜 Scrolling {num_scrolls} times...")
     for i in range(num_scrolls):
         direction = random.choices(["down", "up"], weights=[0.8, 0.2])[0]  # Mostly scroll down
+        print(f"    📜 Scroll {i+1}/{num_scrolls}: {direction}")
         await HumanBehavior.smooth_scroll(page, direction)
         await asyncio.sleep(random.uniform(SCROLL_PAUSE_MIN, SCROLL_PAUSE_MAX))
-        
+
         # Occasionally do idle mouse movement
         if i % 4 == 0 and random.random() > 0.5:
             await HumanBehavior.random_idle_movement(page)
-    
+
     # Sometimes hover over elements at the end
     if random.random() > 0.4:
         await HumanBehavior.hover_and_interact(page, "a, button, [role='button']")
+    print("    📜 Scrolling complete")
 
 
 async def smooth_type(page, selector: str, text: str) -> None:
@@ -116,6 +123,15 @@ async def use_search_bar(page, query: str) -> None:
         await page.wait_for_selector(SEARCH_INPUT_SELECTOR, timeout=10_000)
 
     search_box = page.locator(SEARCH_INPUT_SELECTOR)
+
+    # Move mouse naturally to the search box before clicking
+    box = await search_box.bounding_box()
+    if box:
+        target_x = int(box['x'] + box['width'] / 2 + random.randint(-10, 10))
+        target_y = int(box['y'] + box['height'] / 2 + random.randint(-3, 3))
+        await HumanBehavior.natural_mouse_move(page, target_x, target_y)
+        await asyncio.sleep(random.uniform(0.1, 0.3))
+
     await search_box.click()
     await human_delay(0.3, 0.7)
 
@@ -141,10 +157,16 @@ async def use_search_bar(page, query: str) -> None:
         people_btn = page.locator(people_btn_selector).first
         await people_btn.wait_for(timeout=6_000)
         await human_delay(0.3, 0.8)
-        
-        # Use natural click with mouse movement
-        await HumanBehavior.natural_click(page, people_btn_selector)
-        
+
+        # Move mouse naturally to the button, then click
+        box = await people_btn.bounding_box()
+        if box:
+            target_x = int(box['x'] + box['width'] / 2 + random.randint(-5, 5))
+            target_y = int(box['y'] + box['height'] / 2 + random.randint(-3, 3))
+            await HumanBehavior.natural_mouse_move(page, target_x, target_y)
+            await asyncio.sleep(random.uniform(0.1, 0.3))
+        await people_btn.click()
+
         await page.wait_for_load_state("domcontentloaded")
         await human_delay(2, 4)
     except Exception:
@@ -234,7 +256,7 @@ async def scrape_person(page, name: str, url: Optional[str] = None) -> None:
 
     # ── use the in‑page search bar ──
     await use_search_bar(page, name)
-    
+
     # Re-enable cursor after search page loads
     if DEBUG_CURSOR:
         await show_cursor(page)
@@ -255,6 +277,7 @@ async def scrape_person(page, name: str, url: Optional[str] = None) -> None:
     if clicked:
         await human_delay(3, 6)
         # Simulate natural reading on the profile page
+        print("    📖 Starting reading simulation on profile page...")
         await HumanBehavior.simulate_reading(page)
         await human_delay(1, 2)
     else:
@@ -314,7 +337,7 @@ async def main(csv_path: str) -> None:
         # Start on LinkedIn feed so the search bar is available
         await page.goto(LINKEDIN_HOME, wait_until="domcontentloaded")
         await human_delay(2, 4)
-        
+
         # Enable cursor visibility for debugging if requested
         if DEBUG_CURSOR:
             await show_cursor(page)
