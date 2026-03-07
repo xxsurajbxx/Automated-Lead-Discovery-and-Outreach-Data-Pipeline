@@ -84,6 +84,15 @@ async def random_scroll(page) -> None:
     print("    📜 Scrolling complete")
 
 
+async def go_home_and_simulate_reading(page) -> None:
+    """Navigate to LinkedIn home and simulate brief feed reading behavior."""
+    await page.goto(LINKEDIN_HOME, wait_until="domcontentloaded")
+    await human_delay(2, 4)
+    print("    🏠 On home feed — simulating reading behavior…")
+    await HumanBehavior.simulate_reading(page)
+    await human_delay(1, 2)
+
+
 async def smooth_type(page, selector: str, text: str) -> None:
     """Type text character-by-character at a human pace."""
     await page.click(selector)
@@ -119,8 +128,7 @@ async def use_search_bar(page, query: str) -> None:
         await page.wait_for_selector(SEARCH_INPUT_SELECTOR, timeout=10_000)
     except Exception:
         # Fallback: go to the feed so the search bar is present
-        await page.goto(LINKEDIN_HOME, wait_until="domcontentloaded")
-        await human_delay(2, 4)
+        await go_home_and_simulate_reading(page)
         await page.wait_for_selector(SEARCH_INPUT_SELECTOR, timeout=10_000)
 
     search_box = page.locator(SEARCH_INPUT_SELECTOR)
@@ -467,8 +475,7 @@ async def main(csv_path: str) -> None:
         page = await context.new_page()
 
         # Start on LinkedIn feed so the search bar is available
-        await page.goto(LINKEDIN_HOME, wait_until="domcontentloaded")
-        await human_delay(2, 4)
+        await go_home_and_simulate_reading(page)
 
         # Enable cursor visibility for debugging if requested
         if DEBUG_CURSOR:

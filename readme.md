@@ -12,5 +12,14 @@ run the scraper:
     source venv/bin/activate
     python3 enrichment.py --input people.csv
 
-headline file 1
-components: text component in file 8 (about me section)
+run the post-processing extractor (separate from scraper):
+    source venv/bin/activate
+    python3 extract_profiles.py --input-dir intercepted_json --output profiles.jsonl
+
+extractor behavior:
+    - reads each person folder under intercepted_json one by one
+    - reads each json file inside each person folder
+    - extracts profile identity, experience summary, and education summary
+    - merges overlapping values across files for the same person
+    - skips invalid/noisy files with warnings
+    - writes one normalized json object per person to profiles.jsonl
