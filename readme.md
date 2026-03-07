@@ -11,3 +11,6 @@ Google in debug mode with port 9222:
 run the scraper:
     source venv/bin/activate
     python3 enrichment.py --input people.csv
+
+headline file 1
+components: text component in file 8 (about me section)
