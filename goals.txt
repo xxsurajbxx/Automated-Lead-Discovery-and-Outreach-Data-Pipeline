@@ -1,0 +1,26 @@
+### PRIMARY OBJECTIVE
+Identify LinkedIn profiles for Rust, Go, or C++ developers with a high likelihood of providing referrals for Systems, Distributed Systems, HFT/Quant, or Firmware engineering roles.
+
+### MY BACKGROUND
+- 22-year-old Honors CS student at NJIT (4.0 GPA) with an M.S. in Data Science[cite: 1, 5, 6, 9].
+- Experience: Bank of America (Regulatory Reporting/RWA) and Travelers (Data Engineering/ETL)[cite: 12, 17].
+- Technical Projects: Decentralized P2P network (C++/POSIX/TLS), Parallel BFS/A* (CUDA/MPI), and Makefile Interpreter (C++)[cite: 25, 26, 29, 34].
+
+### TARGET PROFILE PREFERENCES
+- Technical Core: Must show expertise in Rust, Go, or C++.
+- Domain Focus: Systems Engineering, Distributed Systems, HFT/Quant Dev, or Firmware/Embedded.
+- Experience Level: 2+ years preferred, but high-signal New Grads are acceptable.
+- Company Fit: Target Tier-1 Banks, HFT firms (e.g., Akuna, Citadel, Jane Street), or Big Tech Infrastructure.
+
+### SCORING GUIDANCE (0-10)
+- 9-10 (Elite): Systems/HFT dev at a target firm with shared background.
+- 7-8 (Strong): Mid-level Rust/Go dev in Distributed Systems or Cloud Infra.
+- 5-6 (Average): General SWE with no clear systems/low-level focus.
+- 0-4 (Low): Web/Frontend, Recruiters, or missing data.
+- Bonus +1 point for NJIT Honors or Computer Science alumni.
+
+### OUTREACH MESSAGE REQUIREMENTS
+- Concise and personalized; Maximum 4 sentences.
+- Friendly, "peer-to-peer" tone; no pressure.
+- Mention one detail from their profile naturally (e.g., a specific project; default to "your time at {current company}").
+- Briefly mention my career goals/interests and shared school or companies.

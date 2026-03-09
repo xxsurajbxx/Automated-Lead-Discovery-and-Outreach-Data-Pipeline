@@ -35,13 +35,17 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 from typing import Optional
 
+from env_utils import load_env_file
+
+load_env_file()
+
 from playwright.async_api import async_playwright
 from human_behavior import HumanBehavior, show_cursor, DEBUG_CURSOR
 
 
 # ── constants ────────────────────────────────────────────────────────────
 LINKEDIN_HOME = "https://www.linkedin.com/feed/"
-CDP_ENDPOINT = "http://127.0.0.1:9222"
+CDP_ENDPOINT = os.getenv("CDP_ENDPOINT", os.getenv("CHROME_CDP_ENDPOINT", "http://127.0.0.1:9222"))
 
 # Timing knobs (seconds) – tweak to taste
 MIN_WAIT, MAX_WAIT = 2, 5          # between major actions

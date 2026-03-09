@@ -7,6 +7,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
+from env_utils import load_env_file
 from profile_parser import (
     extract_payload,
     extract_profile_from_payload,
@@ -14,6 +15,9 @@ from profile_parser import (
     load_json_safe,
     merge_profile_records,
 )
+
+
+load_env_file()
 
 
 def parse_args() -> argparse.Namespace:
@@ -180,12 +184,6 @@ def main() -> int:
 
         if not raw_data_dir.exists() or not raw_data_dir.is_dir():
             all_warnings.append(f"{person_key}: missing_raw_data_folder")
-            if linkedin_url:
-                try:
-                    mark_information_extracted(conn, linkedin_url)
-                    processed_count += 1
-                except sqlite3.Error as error:
-                    all_warnings.append(f"{person_key}: failed_mark_information_extracted ({error})")
             continue
 
         record, warnings = build_record_for_person(
