@@ -66,7 +66,6 @@ async def show_cursor(page: Page) -> None:
             }
         }
     """)
-    print("\n\U0001f534 Cursor visibility ENABLED - red circle will follow mouse movements\n")
 
 
 class HumanBehavior:
@@ -95,8 +94,6 @@ class HumanBehavior:
 
         steps = random.randint(8, 15)
         per_step = total_distance / steps
-
-        print(f"      ↕ scrolling {total_distance}px ({direction}) via mouse wheel")
 
         # First, make sure the mouse is over the main content area
         # so wheel events hit the right scrollable container
@@ -134,7 +131,6 @@ class HumanBehavior:
 
         # Small settling pause after scroll
         await asyncio.sleep(random.uniform(0.1, 0.3))
-        print(f"      ↕ scroll done")
 
     @staticmethod
     async def natural_mouse_move(page: Page, target_x: int, target_y: int) -> None:
@@ -179,8 +175,6 @@ class HumanBehavior:
             y = (1 - eased_t) ** 2 * current_y + 2 * (1 - eased_t) * eased_t * control_y + eased_t ** 2 * target_y
 
             await page.mouse.move(int(x), int(y))
-            if DEBUG_CURSOR:
-                print(f"  → {int(x)}, {int(y)}", end="\r")
 
             # Variable speed - faster during acceleration/deceleration phases
             if t < 0.3 or t > 0.7:
@@ -228,9 +222,6 @@ class HumanBehavior:
         except Exception:
             pass  # Element not found or interaction failed
 
-        if DEBUG_CURSOR:
-            print(f"  ✓ Hovered over element: {selector}")
-
     @staticmethod
     async def random_idle_movement(page: Page) -> None:
         """Move mouse to center/random area and pause (simulating reading/thinking)."""
@@ -241,9 +232,6 @@ class HumanBehavior:
         # Move to a random reading position
         target_x = random.randint(viewport['width'] // 4, 3 * viewport['width'] // 4)
         target_y = random.randint(viewport['height'] // 4, 3 * viewport['height'] // 4)
-
-        if DEBUG_CURSOR:
-            print(f"  💭 Idle movement to ({target_x}, {target_y})")
 
         await HumanBehavior.natural_mouse_move(page, target_x, target_y)
         await asyncio.sleep(random.uniform(0.5, 1.5))
@@ -281,22 +269,18 @@ class HumanBehavior:
 
             if action_type < 0.65:  # 65% chance: scroll down
                 direction = "down"
-                print(f"      📖 Read action {i+1}/{num_actions}: scroll {direction}")
                 await HumanBehavior.smooth_scroll(page, direction)
                 await asyncio.sleep(random.uniform(0.8, 2.0))
 
             elif action_type < 0.75:  # 10% chance: scroll up slightly
                 direction = "up"
-                print(f"      📖 Read action {i+1}/{num_actions}: scroll {direction}")
                 await HumanBehavior.smooth_scroll(page, direction)
                 await asyncio.sleep(random.uniform(0.5, 1.2))
 
             elif action_type < 0.9:  # 15% chance: idle movement
-                print(f"      📖 Read action {i+1}/{num_actions}: idle movement")
                 await HumanBehavior.random_idle_movement(page)
 
             else:  # 10% chance: hover over element
-                print(f"      📖 Read action {i+1}/{num_actions}: hover")
                 await HumanBehavior.hover_and_interact(page, "a, button, [role='button']")
 
             # Occasional longer pause (like reading a paragraph)
@@ -305,7 +289,6 @@ class HumanBehavior:
 
         # Final scroll back up partially so the page state looks natural
         if random.random() > 0.5:
-            print(f"      📖 Scrolling back up a bit")
             await HumanBehavior.smooth_scroll(page, "up")
             await asyncio.sleep(random.uniform(0.5, 1.0))
 

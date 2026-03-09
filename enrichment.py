@@ -2,8 +2,8 @@ r"""
 LinkedIn Profile Scraper
 ========================
 Connects to your real Chrome browser via CDP (Chrome DevTools Protocol),
-searches LinkedIn for each person in a CSV, emulates human scrolling,
-and saves the full HTML of the profile page.
+searches LinkedIn for each person from the leads database, emulates human scrolling,
+and captures profile-related API JSON responses.
 
 Usage:
   1. Launch Chrome with remote debugging (macOS):
@@ -14,23 +14,22 @@ Usage:
 
   3. Make sure you're logged into LinkedIn in that browser.
 
-  4. Run the scraper with cursor debug:
-       SHOW_CURSOR=1 python3 enrichment.py --input people.csv
+    4. Run the scraper with cursor debug:
+             SHOW_CURSOR=1 python3 enrichment.py --db leads.db
 
-  The CSV must have a column called "name" (case-insensitive).
-  It may optionally have a "url" column with the LinkedIn profile URL.
-  When a URL is provided the scraper uses LinkedIn's own search bar
-  to find the person and then clicks the matching profile link —
-  it never navigates directly to the URL.
+    The SQLite DB should contain a leads table with fields including
+    name, linkedin_url, slug, and scraped.
+    The scraper processes rows where scraped = 0 and marks each attempted
+    row as scraped = 1 after the attempt completes.
 """
 
 import argparse
 import asyncio
-import csv
 import json
 import os
 import random
 import re
+import sqlite3
 import time
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
@@ -49,7 +48,7 @@ MIN_WAIT, MAX_WAIT = 2, 5          # between major actions
 SCROLL_PAUSE_MIN, SCROLL_PAUSE_MAX = 0.8, 2.5  # increased pause time
 SCROLLS_MIN, SCROLLS_MAX = 4, 7    # scroll movements per page
 DEBUG_INTERCEPT = os.getenv("DEBUG_INTERCEPT", "0") == "1"
-INTERCEPT_OUTPUT_ROOT = Path(os.getenv("INTERCEPT_OUTPUT_DIR", "intercepted_json"))
+INTERCEPT_OUTPUT_ROOT = Path(os.getenv("INTERCEPT_OUTPUT_DIR", "user_data"))
 
 
 # ── helpers ──────────────────────────────────────────────────────────────
@@ -70,7 +69,6 @@ async def random_scroll(page) -> None:
     print(f"    📜 Scrolling {num_scrolls} times...")
     for i in range(num_scrolls):
         direction = random.choices(["down", "up"], weights=[0.8, 0.2])[0]  # Mostly scroll down
-        print(f"    📜 Scroll {i+1}/{num_scrolls}: {direction}")
         await HumanBehavior.smooth_scroll(page, direction)
         await asyncio.sleep(random.uniform(SCROLL_PAUSE_MIN, SCROLL_PAUSE_MAX))
 
@@ -93,21 +91,10 @@ async def go_home_and_simulate_reading(page) -> None:
     await human_delay(1, 2)
 
 
-async def smooth_type(page, selector: str, text: str) -> None:
-    """Type text character-by-character at a human pace."""
-    await page.click(selector)
-    await asyncio.sleep(random.uniform(0.2, 0.5))
-    for ch in text:
-        await page.keyboard.type(ch, delay=random.randint(40, 170))
-    await asyncio.sleep(random.uniform(0.3, 0.8))
-
-
-def extract_slug(url: str) -> Optional[str]:
-    """Extract the vanity slug from a LinkedIn profile URL.
-
-    e.g. 'https://www.linkedin.com/in/johndoe/' → 'johndoe'
-    """
-    m = re.search(r"linkedin\.com/in/([^/?#]+)", url)
+def fallback_slug_from_url(url: Optional[str]) -> Optional[str]:
+    if not url:
+        return None
+    m = re.search(r"linkedin\.com/in/([^/?#]+)", url, flags=re.IGNORECASE)
     return m.group(1).rstrip("/").lower() if m else None
 
 
@@ -198,11 +185,12 @@ async def click_matching_profile(page, slug: Optional[str]) -> bool:
     count = await links.count()
 
     if slug:
+        slug_token = f"/in/{slug.lower()}"
+
         # Try to find the exact matching profile
         for idx in range(count):
-            href = await links.nth(idx).get_attribute("href") or ""
-            link_slug = extract_slug(href)
-            if link_slug and link_slug == slug:
+            href = (await links.nth(idx).get_attribute("href") or "").lower()
+            if (slug_token + "/") in href or (slug_token + "?") in href or href.rstrip("/").endswith(slug_token):
                 await human_delay(0.5, 1.5)
                 # Use natural click with mouse movement
                 box = await links.nth(idx).bounding_box()
@@ -366,10 +354,10 @@ async def intercept_profile_data(response, output_dir: Path, expected_slug: Opti
         if DEBUG_INTERCEPT:
             print(f"    🧪 Intercept skip (json parse): {base_url}")
 
-async def scrape_person(page, name: str, url: Optional[str] = None) -> None:
+async def scrape_person(page, name: str, slug: Optional[str] = None) -> None:
     """Search LinkedIn for *name*, click the matching profile,
     then capture intercepted profile JSON responses."""
-    slug = extract_slug(url) if url else None
+    slug = (slug or "").strip().lower() or None
     print(f"  → Searching for: {name}" + (f"  (slug: {slug})" if slug else ""))
 
     # ── use the in‑page search bar ──
@@ -391,7 +379,7 @@ async def scrape_person(page, name: str, url: Optional[str] = None) -> None:
 
     # Only intercept during this person's profile navigation/extraction window
     person_key = sanitize_for_filename(slug or name)
-    person_output_dir = INTERCEPT_OUTPUT_ROOT / person_key
+    person_output_dir = INTERCEPT_OUTPUT_ROOT / person_key / "raw_data"
     capture_state = {"count": 0}
 
     profile_listener = lambda response: asyncio.create_task(
@@ -418,9 +406,9 @@ async def scrape_person(page, name: str, url: Optional[str] = None) -> None:
             print(f"    ⚠ Landed on non-profile page: {page.url}")
             return
 
-        # When slug wasn't provided by CSV URL, bind to the landed profile slug.
+        # Emergency fallback only when slug is unavailable from DB.
         if not slug:
-            slug = extract_slug(page.url)
+            slug = fallback_slug_from_url(page.url)
 
         await human_delay(3, 6)
 
@@ -433,36 +421,57 @@ async def scrape_person(page, name: str, url: Optional[str] = None) -> None:
         print(f"    💾 JSON saved for this profile: {capture_state['count']} file(s) in {person_output_dir}")
 
 
-async def main(csv_path: str) -> None:
-    # Read names (and optional URLs) from CSV
-    people: list[dict] = []  # [{"name": ..., "url": ... | None}]
-    with open(csv_path, newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        headers = {col.strip().lower(): col for col in (reader.fieldnames or [])}
+def load_people_from_db(conn: sqlite3.Connection) -> list[dict]:
+    people: list[dict] = []
+    rows = conn.execute(
+        """
+        SELECT linkedin_url, name, slug
+        FROM leads
+        WHERE scraped = 0
+        """
+    ).fetchall()
 
-        name_col = headers.get("name")
-        if name_col is None:
-            raise SystemExit("CSV must contain a column called 'name'.")
+    for row in rows:
+        linkedin_url_val = (row[0] or "").strip()
+        name_val = (row[1] or "").strip()
+        slug_val = (row[2] or "").strip().lower()
 
-        # Accept "url", "linkedin_url", "profile_url", "link", etc.
-        url_col = None
-        for key in ("url", "linkedin_url", "profile_url", "link", "linkedin"):
-            if key in headers:
-                url_col = headers[key]
-                break
+        if not name_val:
+            print(f"  ⚠ Skipping lead with missing name: {linkedin_url_val or '(no linkedin_url)'}")
+            continue
 
-        for row in reader:
-            name_val = row[name_col].strip()
-            url_val = row.get(url_col, "").strip() if url_col else None
-            if name_val:
-                people.append({"name": name_val, "url": url_val or None})
+        people.append({
+            "name": name_val,
+            "linkedin_url": linkedin_url_val or None,
+            "slug": slug_val or None,
+        })
+
+    return people
+
+
+def mark_scraped(conn: sqlite3.Connection, linkedin_url: str) -> None:
+    conn.execute(
+        "UPDATE leads SET scraped = 1 WHERE linkedin_url = ?",
+        (linkedin_url,),
+    )
+    conn.commit()
+
+
+async def main(db_path: str) -> None:
+    conn = sqlite3.connect(db_path)
+
+    try:
+        people = load_people_from_db(conn)
+    except sqlite3.Error as exc:
+        conn.close()
+        raise SystemExit(f"Failed to read leads from database: {exc}")
 
     if not people:
-        raise SystemExit("No names found in the CSV.")
+        conn.close()
+        raise SystemExit("No unscraped leads found in the database.")
 
     print(f"Found {len(people)} person(s) to look up.")
-    if url_col:
-        print(f"  (URL column detected: '{url_col}')")
+    print(f"  (Source DB: {Path(db_path).resolve()})")
     print(f"  (JSON output directory: {INTERCEPT_OUTPUT_ROOT.resolve()})")
     print()
 
@@ -483,7 +492,25 @@ async def main(csv_path: str) -> None:
 
         for i, person in enumerate(people, 1):
             print(f"\n[{i}/{len(people)}]")
-            await scrape_person(page, person["name"], person["url"])
+            attempted = False
+            try:
+                attempted = True
+                await scrape_person(
+                    page,
+                    person["name"],
+                    slug=person.get("slug"),
+                )
+            except Exception as exc:
+                print(f"    ⚠ Scrape attempt failed for '{person['name']}': {exc}")
+            finally:
+                linkedin_url = person.get("linkedin_url")
+                if attempted and linkedin_url:
+                    try:
+                        mark_scraped(conn, linkedin_url)
+                        print(f"    ✅ Marked scraped in DB: {linkedin_url}")
+                    except sqlite3.Error as exc:
+                        print(f"    ⚠ Failed to mark scraped for '{person['name']}': {exc}")
+
             # Random pause between people
             if i < len(people):
                 pause = random.uniform(5, 12)
@@ -492,16 +519,17 @@ async def main(csv_path: str) -> None:
 
         await page.close()
         print("\nDone! Processed all profiles.")
+        conn.close()
 
 
 # ── entry point ──────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Scrape LinkedIn profiles from a CSV of names.")
+    parser = argparse.ArgumentParser(description="Scrape LinkedIn profiles from leads.db rows where scraped = 0.")
     parser.add_argument(
-        "--input", "-i",
-        required=True,
-        help="Path to CSV file with a 'name' column (and optional 'url' column).",
+        "--db", "-d",
+        default="leads.db",
+        help="Path to SQLite DB file (default: leads.db).",
     )
     args = parser.parse_args()
-    asyncio.run(main(args.input))
+    asyncio.run(main(args.db))

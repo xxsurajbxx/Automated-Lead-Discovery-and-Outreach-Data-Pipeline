@@ -1,4 +1,50 @@
 {
+  "person_key": "akhil-katta-6b795712b",
+  "name": "Akhil Katta",
+  "headline": "Data @ Amazon|Data Engineer|ETL Expert|Cloud Data Architect|CMU Grad| Ex- EY,Oracle",
+  "profile_url": "https://www.linkedin.com/in/akhil-katta-6b795712b",
+  "public_identifier": "akhil-katta-6b795712b",
+  "experience": [
+    {
+      "title": "Data Engineer",
+      "company": "Oracle",
+      "summary": "Oracle · Full-time",
+      "date_range": "Jun 2019 - Jul 2021 · 2 yrs 2 mos"
+    },
+    {
+      "title": "Intern - Data Analytics",
+      "company": "EY",
+      "summary": "EY · Internship",
+      "date_range": "Jun 2022 - Aug 2022 · 3 mos"
+    },
+    {
+      "title": "Data Engineer",
+      "company": "EY",
+      "summary": "EY · Full-time",
+      "date_range": "Jan 2023 - Jan 2024 · 1 yr 1 mo"
+    },
+    {
+      "title": "Business Intelligence Engineer II",
+      "company": "Amazon",
+      "summary": "Amazon · Full-time",
+      "date_range": "Mar 2024 - Present · 2 yrs 1 mo"
+    }
+  ],
+  "education": [
+    {
+      "school": "Ramaiah Institute Of Technology",
+      "summary": "Bachelor of Engineering - BE, Electronics and Communications Engineering",
+      "date_range": "Aug 2015 - Jun 2019"
+    },
+    {
+      "school": "Carnegie Mellon University - Heinz College of Information Systems and Public Policy",
+      "summary": "Master of Science - MS, Information Systems Management",
+      "date_range": "Aug 2021 - Dec 2022"
+    }
+  ]
+}
+
+{
   "person_key": "aleatory-funkhouser-258103303",
   "name": "Aleatory Funkhouser",
   "headline": "Business Student at NJIT | Marketing Concentration | Aspiring Property Management and Real Estate Professional | Public Relations Coordinator at Delta Phi Epsilon",
@@ -67,6 +113,49 @@
 }
 
 {
+  "person_key": "bobby-hsu",
+  "name": "Bobby Hsu",
+  "headline": "Data Engineer @ Meta",
+  "profile_url": "https://www.linkedin.com/in/bobby-hsu",
+  "public_identifier": "bobby-hsu",
+  "experience": [
+    {
+      "title": "Data Engineer",
+      "company": "State Farm",
+      "date_range": "Feb 2020 - Nov 2022 · 2 yrs 10 mos"
+    },
+    {
+      "title": "Data Engineer II",
+      "company": "State Farm",
+      "date_range": "Nov 2022 - Sep 2024 · 1 yr 11 mos"
+    },
+    {
+      "title": "Lead Data Engineer",
+      "company": "State Farm",
+      "date_range": "Sep 2024 - Nov 2025 · 1 yr 3 mos"
+    },
+    {
+      "title": "Data Engineer",
+      "company": "Meta",
+      "summary": "Meta · Full-time",
+      "date_range": "Dec 2025 - Present · 4 mos"
+    }
+  ],
+  "education": [
+    {
+      "school": "University of Illinois Urbana-Champaign",
+      "summary": "Bachelor of Science - BS, Computer Science",
+      "date_range": "Aug 2016 - Aug 2019"
+    },
+    {
+      "school": "Georgia Institute of Technology",
+      "summary": "Master of Science - MS, Computer Science",
+      "date_range": "Aug 2023 - Aug 2025"
+    }
+  ]
+}
+
+{
   "person_key": "brayanamartinez",
   "name": "Brayan Martinez",
   "headline": "Prev Finance Management Summer Analyst @BofA | ALPFA NJ | America Needs You Alumni",
@@ -114,6 +203,228 @@
 }
 
 {
+  "person_key": "chad-isenberg",
+  "name": "Chad Isenberg",
+  "headline": "Senior Data Engineer at Shopify | Zendesk alumnus",
+  "profile_url": "https://www.linkedin.com/in/chad-isenberg",
+  "public_identifier": "chad-isenberg",
+  "experience": [
+    {
+      "title": "Medical Data Analyst",
+      "company": "ROi Resource Optimization & Innovation",
+      "summary": "ROi Resource Optimization & Innovation",
+      "date_range": "Mar 2018 - Jul 2018 · 5 mos"
+    },
+    {
+      "title": "Data Analyst",
+      "company": "Hager Companies",
+      "summary": "Hager Companies · Full-time",
+      "date_range": "Aug 2018 - Oct 2020 · 2 yrs 3 mos"
+    },
+    {
+      "title": "Business Intelligence Developer",
+      "company": "Grimco, Inc.",
+      "summary": "Grimco, Inc. · Full-time",
+      "date_range": "Oct 2020 - May 2022 · 1 yr 8 mos"
+    },
+    {
+      "title": "Data Engineer",
+      "company": "Zendesk",
+      "date_range": "May 2022 - Mar 2024 · 1 yr 11 mos"
+    },
+    {
+      "title": "Senior Data Engineer",
+      "company": "Zendesk",
+      "date_range": "Mar 2024 - Dec 2025 · 1 yr 10 mos"
+    },
+    {
+      "title": "Senior Data Engineer",
+      "company": "Shopify",
+      "summary": "Shopify · Full-time",
+      "date_range": "Dec 2025 - Present · 4 mos"
+    }
+  ],
+  "education": [
+    {
+      "school": "University of Nebraska-Lincoln",
+      "summary": "Postgraduate, Literature",
+      "date_range": "2006 - 2007"
+    },
+    {
+      "school": "Southern Illinois University Edwardsville",
+      "summary": "Master of Arts (M.A.), Literature",
+      "date_range": "2004 - 2006"
+    }
+  ]
+}
+
+{
+  "person_key": "christopher-garzon-647081101",
+  "name": "Christopher Garzon",
+  "headline": "Helping 90 Data Engineers in next 90 days land their dream data roles | Helped 1.5k Data Engineers land their dream role | Instagram (@data_engineer_academy)",
+  "profile_url": "https://www.linkedin.com/in/christopher-garzon-647081101",
+  "public_identifier": "christopher-garzon-647081101",
+  "experience": [
+    {
+      "title": "Research Intern",
+      "company": "Center for Talent Innovation",
+      "summary": "Center for Talent Innovation",
+      "date_range": "May 2016 - Sep 2016 · 5 mos"
+    },
+    {
+      "title": "Business Analyst",
+      "company": "Amazon",
+      "date_range": "Jul 2017 - Nov 2019 · 2 yrs 5 mos"
+    },
+    {
+      "title": "Data Engineer",
+      "company": "Amazon",
+      "date_range": "Nov 2019 - Aug 2020 · 10 mos"
+    },
+    {
+      "title": "Data Engineer",
+      "company": "Build Asset Management",
+      "summary": "Build Asset Management · Full-time",
+      "date_range": "Jun 2020 - Feb 2022 · 1 yr 9 mos"
+    },
+    {
+      "title": "Data Engineer",
+      "company": "Lyft",
+      "summary": "Lyft · Full-time",
+      "date_range": "Jan 2022 - May 2023 · 1 yr 5 mos"
+    },
+    {
+      "title": "Founder & CEO",
+      "company": "Data Engineer Academy",
+      "summary": "Data Engineer Academy · Full-time",
+      "date_range": "Feb 2022 - Present · 4 yrs 2 mos"
+    }
+  ],
+  "education": [
+    {
+      "school": "Bard High School Early College",
+      "summary": "High School, New York City High School Regents Diploma, Bard College Associate's Degree",
+      "date_range": "2009 - 2013"
+    },
+    {
+      "school": "Boston College",
+      "summary": "Bachelor’s Degree, Mathematics (B.S), Economics",
+      "date_range": "2013 - 2017"
+    }
+  ]
+}
+
+{
+  "person_key": "cvgardner",
+  "name": "Christopher Gardner",
+  "headline": "I work as an installer at Braymiller Builders. I love my family, want to help people, and serve Jesus as my king and savior",
+  "profile_url": "https://www.linkedin.com/in/cvgardner",
+  "public_identifier": "cvgardner",
+  "experience": [
+    {
+      "title": "Customer Service Engineer",
+      "company": "Siemens Healthcare",
+      "summary": "Siemens Healthcare · Full-time",
+      "date_range": "Oct 2011 - Oct 2014 · 3 yrs 1 mo"
+    },
+    {
+      "title": "Field Engineering Specialist",
+      "company": "Roche",
+      "summary": "Roche · Full-time",
+      "date_range": "Oct 2014 - Jan 2017 · 2 yrs 4 mos"
+    },
+    {
+      "title": "Full Stack Engineer",
+      "company": "Startup Company",
+      "summary": "Startup Company",
+      "date_range": "May 2020 - Nov 2020 · 7 mos"
+    },
+    {
+      "title": "Photographer",
+      "company": "Cassi Claire Photography",
+      "summary": "Cassi Claire Photography · Self-employed",
+      "date_range": "Jan 2017 - Apr 2021 · 4 yrs 4 mos"
+    },
+    {
+      "title": "Frontend Developer",
+      "company": "Luxury Brand Partners, LLC",
+      "summary": "Luxury Brand Partners, LLC · Full-time",
+      "date_range": "Apr 2021 - Present · 5 yrs"
+    }
+  ],
+  "education": [
+    {
+      "school": "Hunterdon Central Regional High School"
+    },
+    {
+      "school": "Rutgers University",
+      "summary": "B.S., Biomedical Engineering",
+      "date_range": "2006 - 2011"
+    }
+  ]
+}
+
+{
+  "person_key": "davidkfreitag",
+  "name": "David Freitag",
+  "headline": "Senior Data Engineer at American Family Insurance | SQL, Python, AWS, GCP, Kubernetes, LangGraph, Terraform",
+  "profile_url": "https://www.linkedin.com/in/davidkfreitag",
+  "public_identifier": "davidkfreitag",
+  "experience": [
+    {
+      "title": "High School English Teacher",
+      "company": "Platteville High School",
+      "summary": "Platteville High School · Full-time",
+      "date_range": "Jul 2012 - Jun 2014 · 2 yrs"
+    },
+    {
+      "title": "High School English Teacher",
+      "company": "Greendale Schools",
+      "summary": "Greendale Schools · Full-time",
+      "date_range": "Jul 2014 - Jun 2018 · 4 yrs"
+    },
+    {
+      "title": "Partnerships Specialist",
+      "company": "DojoMojo",
+      "date_range": "Jul 2018 - Sep 2019 · 1 yr 3 mos"
+    },
+    {
+      "title": "Senior Partnerships Specialist",
+      "company": "DojoMojo",
+      "date_range": "Sep 2019 - Jul 2020 · 11 mos"
+    },
+    {
+      "title": "Data Science Intern",
+      "company": "Pitney Bowes",
+      "summary": "Pitney Bowes · Internship",
+      "date_range": "Mar 2021 - Jul 2021 · 5 mos"
+    },
+    {
+      "title": "Data Engineer",
+      "company": "American Family Insurance",
+      "date_range": "Aug 2021 - Feb 2023 · 1 yr 7 mos"
+    },
+    {
+      "title": "Senior Data Engineer",
+      "company": "American Family Insurance",
+      "date_range": "Feb 2023 - Present · 3 yrs 2 mos"
+    }
+  ],
+  "education": [
+    {
+      "school": "University of Wisconsin-Milwaukee",
+      "summary": "Bachelor of Science (B.S.), English/Language Arts Teacher Education",
+      "date_range": "2007 - 2012"
+    },
+    {
+      "school": "Baruch College",
+      "summary": "Master of Science (M.S.), Information Systems, Data Analytics",
+      "date_range": "Sep 2020 - May 2021"
+    }
+  ]
+}
+
+{
   "person_key": "dharamnshah",
   "name": "Dharam Shah",
   "headline": "Data Engineering Intern @ MetLife | CS @ NJIT Honors",
@@ -148,6 +459,62 @@
       "school": "New Jersey Institute of Technology",
       "summary": "Bachelor of Science - BS, Computer Science",
       "date_range": "Sep 2022 - May 2026"
+    }
+  ]
+}
+
+{
+  "person_key": "dhrooov",
+  "name": "Dhruv Saxena",
+  "headline": "Data Engineer II @ AWS • NYU • UC Davis",
+  "profile_url": "https://www.linkedin.com/in/dhrooov",
+  "public_identifier": "dhrooov",
+  "experience": [
+    {
+      "title": "Graduate Research Assistant",
+      "company": "New York University",
+      "summary": "New York University · Part-time",
+      "date_range": "Mar 2022 - May 2022 · 3 mos"
+    },
+    {
+      "title": "Data Engineer Intern",
+      "company": "Amazon Web Services (AWS)",
+      "summary": "Amazon Web Services (AWS) · Full-time",
+      "date_range": "May 2022 - Aug 2022 · 4 mos"
+    },
+    {
+      "title": "Data Science Intern (Capstone)",
+      "company": "Orbio Earth",
+      "summary": "Orbio Earth · Internship",
+      "date_range": "Sep 2022 - Dec 2022 · 4 mos"
+    },
+    {
+      "title": "Teaching Assistant",
+      "company": "Courant Institute of Mathematical Sciences",
+      "summary": "Courant Institute of Mathematical Sciences · Part-time",
+      "date_range": "Sep 2022 - May 2023 · 9 mos"
+    },
+    {
+      "title": "Data Engineer I",
+      "company": "Amazon Web Services (AWS)",
+      "date_range": "Jul 2023 - Jun 2025 · 2 yrs"
+    },
+    {
+      "title": "Data Engineer II",
+      "company": "Amazon Web Services (AWS)",
+      "date_range": "Jul 2025 - Present · 9 mos"
+    }
+  ],
+  "education": [
+    {
+      "school": "University of California, Davis",
+      "summary": "Bachelor of Science - BS, Computer Science",
+      "date_range": "2016 - 2020"
+    },
+    {
+      "school": "New York University",
+      "summary": "Master of Science - MS, Data Science",
+      "date_range": "Sep 2021 - May 2023"
     }
   ]
 }
@@ -252,6 +619,61 @@
 }
 
 {
+  "person_key": "eli-brunette",
+  "name": "Eli Brunette",
+  "headline": "Feature Engineering, Sigma Computing and +59 skills",
+  "profile_url": "https://www.linkedin.com/in/eli-brunette",
+  "public_identifier": "eli-brunette",
+  "experience": [
+    {
+      "title": "Graduate Teaching Assistant (Instructor of Record)",
+      "company": "Eastern Washington University",
+      "summary": "Eastern Washington University · Part-time",
+      "date_range": "Sep 2017 - Dec 2018 · 1 yr 4 mos"
+    },
+    {
+      "title": "Data Scientist",
+      "company": "RiskLens",
+      "date_range": "Apr 2019 - Mar 2021 · 2 yrs"
+    },
+    {
+      "title": "Cloud Data Engineer",
+      "company": "Treasury4",
+      "date_range": "Sep 2022 - Jan 2025 · 2 yrs 5 mos"
+    },
+    {
+      "title": "Lead Data Engineer",
+      "company": "Treasury4",
+      "date_range": "Apr 2023 - Jan 2025 · 1 yr 10 mos"
+    },
+    {
+      "title": "Freelance Data Engineer - Open To Opportunities",
+      "company": "Independent",
+      "summary": "Independent · Full-time",
+      "date_range": "Jan 2025 - Apr 2025 · 4 mos"
+    },
+    {
+      "title": "Data Engineer",
+      "company": "City of Hope",
+      "summary": "City of Hope · Full-time",
+      "date_range": "Apr 2025 - Present · 1 yr"
+    }
+  ],
+  "education": [
+    {
+      "school": "Eastern Washington University",
+      "summary": "BS, Physics",
+      "date_range": "2011 - 2016"
+    },
+    {
+      "school": "Eastern Washington University",
+      "summary": "Master's degree, Computer Science",
+      "date_range": "Sep 2017 - Dec 2019"
+    }
+  ]
+}
+
+{
   "person_key": "justin--andersen",
   "name": "Justin Andersen",
   "headline": "Civil Engineer at Colliers Engineering and Design",
@@ -337,6 +759,53 @@
     {
       "school": "Albert Dorman Honors College at NJIT",
       "date_range": "Sep 2021 - May 2025"
+    }
+  ]
+}
+
+{
+  "person_key": "kennely",
+  "name": "Michael Kennelly",
+  "headline": "Team Leadership",
+  "profile_url": "https://www.linkedin.com/in/kennely",
+  "public_identifier": "kennely",
+  "experience": [
+    {
+      "title": "Sales Intern",
+      "company": "Riverbed Technology",
+      "summary": "Riverbed Technology",
+      "date_range": "May 2010 - Aug 2010 · 4 mos"
+    },
+    {
+      "title": "Design/Marketing",
+      "company": "Thread Count",
+      "summary": "Thread Count",
+      "date_range": "Jul 2013 - Dec 2014 · 1 yr 6 mos"
+    },
+    {
+      "title": "Remote Sales Associate",
+      "company": "Nalpak Inc.",
+      "summary": "Nalpak Inc.",
+      "date_range": "Apr 2015 - Dec 2016 · 1 yr 9 mos"
+    },
+    {
+      "title": "Inside Sales Representative",
+      "company": "Riverbed Technology",
+      "summary": "Riverbed Technology",
+      "date_range": "Apr 2017 - Sep 2017 · 6 mos"
+    },
+    {
+      "title": "Business Development Manager",
+      "company": "G-Net Solutions, Inc.",
+      "summary": "G-Net Solutions, Inc.",
+      "date_range": "Oct 2017 - Present · 8 yrs 6 mos"
+    }
+  ],
+  "education": [
+    {
+      "school": "Dominican University of California",
+      "summary": "Bachelor of Arts (BA), Global Business Communications",
+      "date_range": "2007 - 2013"
     }
   ]
 }
@@ -482,5 +951,15 @@
       "date_range": "Jan 2024 - Dec 2026"
     }
   ]
+}
+
+{
+  "person_key": "techacrawford",
+  "name": "Amanda Crawford-Adamo",
+  "headline": "Sr. Data Engineer | Instructor | Author | Ex-Microsoft | Ex-Dropbox",
+  "profile_url": "https://www.linkedin.com/in/techacrawford",
+  "public_identifier": "techacrawford",
+  "experience": [],
+  "education": []
 }
 
