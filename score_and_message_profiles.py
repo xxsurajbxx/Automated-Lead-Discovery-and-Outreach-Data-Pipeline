@@ -33,10 +33,10 @@ def parse_args() -> argparse.Namespace:
         help="Root directory containing {slug}/{slug}_cleaned_data.json",
     )
     parser.add_argument(
-        "--goals-file",
+        "--prompt-file",
         type=Path,
-        default=Path("goals.txt"),
-        help="Path to text file containing your goals/context (default: goals.txt)",
+        default=Path("LLMPrompt.txt"),
+        help="Path to text file containing your prompt (default: LLMPrompt.txt)",
     )
     parser.add_argument(
         "--model",
@@ -65,10 +65,10 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_goals(goals_path: Path) -> str:
-    if not goals_path.exists():
-        raise FileNotFoundError(f"Goals file not found: {goals_path}")
-    return goals_path.read_text(encoding="utf-8").strip()
+def load_prompt(prompt_path: Path) -> str:
+    if not prompt_path.exists():
+        raise FileNotFoundError(f"prompt file not found: {prompt_path}")
+    return prompt_path.read_text(encoding="utf-8").strip()
 
 
 def fetch_pending_leads(conn: sqlite3.Connection, require_extracted: bool, limit: int) -> list[dict[str, Any]]:
@@ -113,7 +113,7 @@ def load_cleaned_profile(user_data_dir: Path, slug: str) -> dict[str, Any]:
     return data
 
 
-def build_llm_prompt(profile: dict[str, Any], goals_text: str, threshold: float) -> str:
+def build_llm_prompt(profile: dict[str, Any], prompt_text: str, threshold: float) -> str:
     profile_payload = {
         "name": profile.get("name"),
         "headline": profile.get("headline"),
@@ -123,17 +123,13 @@ def build_llm_prompt(profile: dict[str, Any], goals_text: str, threshold: float)
     }
 
     return (
-        "SYSTEM ROLE: Expert Systems Engineer and Technical Recruiter.\n"
-        f"OUTPUT FORMAT: Return ONLY a minified JSON object: {{\"score\": int, \"rationale\": string, \"message\": string}}.\n\n"
-        "### TASK CONSTRAINTS\n"
-        "- 'score' MUST be an integer between 0 and 10.\n"
-        f"- Score high-value leads >= {threshold}.\n"
-        "- Use 'MY BACKGROUND' in the goals to anchor messages in shared technical ground (C++, NJIT, etc.).\n"
-        "- Ensure messages are <= 4 sentences and personalized.\n"
-        f"- If the score is >= {threshold}, the message MUST be high-effort and technical.\n"
-        f"- If the score is < {threshold}, set 'message' to an empty string.\n\n"
-        "### GOALS CONTEXT\n"
-        f"{goals_text}\n\n"
+        f"{prompt_text}\n"
+        f"""SCORING CONSTRAINTS
+- 'score' MUST be an integer between 0 and 10.
+- Score high-value leads >= {threshold}.
+- Ensure messages are <= 4 sentences and personalized.
+- If the score is >= {threshold}, the message MUST be high-effort and technical.
+- If the score is < {threshold}, set 'message' to an empty string.\n"""
         "### CANDIDATE DATA\n"
         f"{json.dumps(profile_payload, separators=(',', ':'), ensure_ascii=False)}"
     )
@@ -292,7 +288,7 @@ def score_single_lead(
     conn: sqlite3.Connection,
     lead: dict[str, Any],
     user_data_dir: Path,
-    goals_text: str,
+    prompt_text: str,
     model: str,
     threshold: float,
     max_retries: int,
@@ -310,7 +306,7 @@ def score_single_lead(
     except Exception as err:
         return False, f"{linkedin_url}: cleaned_profile_error: {err}"
 
-    prompt = build_llm_prompt(profile=profile, goals_text=goals_text, threshold=threshold)
+    prompt = build_llm_prompt(profile=profile, prompt_text=prompt_text, threshold=threshold)
 
     last_error: str | None = None
     for attempt in range(1, max_retries + 1):
@@ -347,9 +343,9 @@ def main() -> int:
         return 1
 
     try:
-        goals_text = load_goals(args.goals_file)
+        prompt_text = load_prompt(args.prompt_file)
     except Exception as err:
-        print(f"Failed to load goals: {err}", file=sys.stderr)
+        print(f"Failed to load prompt: {err}", file=sys.stderr)
         return 1
 
     conn = sqlite3.connect(args.db)
@@ -393,7 +389,7 @@ def main() -> int:
             conn=conn,
             lead=lead,
             user_data_dir=args.user_data_dir,
-            goals_text=goals_text,
+            prompt_text=prompt_text,
             model=args.model,
             threshold=args.threshold,
             max_retries=max(1, args.max_retries),
