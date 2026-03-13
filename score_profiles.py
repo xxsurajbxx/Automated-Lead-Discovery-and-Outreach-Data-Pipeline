@@ -18,9 +18,6 @@ from env_utils import load_env_file
 load_env_file()
 
 
-TEMPORARY_TEST_SINGLE_RUN_DEFAULT = True
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Score leads with OpenAI from cleaned user_data files and write rating/message back to leads.db"
@@ -55,11 +52,6 @@ def parse_args() -> argparse.Namespace:
         "--allow-unextracted",
         action="store_true",
         help="Process rows regardless of information_extracted flag",
-    )
-    parser.add_argument(
-        "--disable-temp-single-run",
-        action="store_true",
-        help="Disable TEMPORARY test behavior and process all pending leads.",
     )
     parser.set_defaults(require_extracted=True)
     return parser.parse_args()
@@ -336,7 +328,6 @@ def main() -> int:
     args = parse_args()
 
     require_extracted = args.require_extracted and not args.allow_unextracted
-    temp_single_run_enabled = TEMPORARY_TEST_SINGLE_RUN_DEFAULT and not args.disable_temp_single_run
 
     if not args.db.exists():
         print(f"Database not found: {args.db}", file=sys.stderr)
@@ -363,23 +354,6 @@ def main() -> int:
         return 0
 
     print(f"Pending leads: {len(leads)}")
-
-    if temp_single_run_enabled:
-        print("TEMPORARY TEST MODE ENABLED: listing all pending leads, then processing one lead and exiting.")
-        for idx, lead in enumerate(leads, start=1):
-            print(
-                f"  [{idx}] slug={lead.get('slug') or 'N/A'} | "
-                f"name={lead.get('name') or 'N/A'} | url={lead.get('linkedin_url') or 'N/A'}"
-            )
-        leads = leads[:1]
-        selected = leads[0]
-        print(
-            "TEMPORARY TEST MODE SELECTED: "
-            f"slug={selected.get('slug') or 'N/A'} | "
-            f"name={selected.get('name') or 'N/A'} | "
-            f"url={selected.get('linkedin_url') or 'N/A'}"
-        )
-        print("TEMPORARY TEST MODE: running LLM for selected lead only, then quitting.")
 
     success_count = 0
     failure_count = 0

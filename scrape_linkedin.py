@@ -36,6 +36,15 @@ from urllib.parse import parse_qs, unquote, urlparse
 from typing import Optional
 
 from env_utils import load_env_file
+from linkedin_common import (
+    click_matching_profile,
+    click_with_popup_recovery,
+    dismiss_blocking_linkedin_popup,
+    go_home_and_simulate_reading,
+    human_delay,
+    random_scroll,
+    use_search_bar,
+)
 
 load_env_file()
 
@@ -44,56 +53,13 @@ from human_behavior import HumanBehavior, show_cursor, DEBUG_CURSOR
 
 
 # ── constants ────────────────────────────────────────────────────────────
-LINKEDIN_HOME = "https://www.linkedin.com/feed/"
 CDP_ENDPOINT = os.getenv("CDP_ENDPOINT", os.getenv("CHROME_CDP_ENDPOINT", "http://127.0.0.1:9222"))
 
-# Timing knobs (seconds) – tweak to taste
-MIN_WAIT, MAX_WAIT = 2, 5          # between major actions
-SCROLL_PAUSE_MIN, SCROLL_PAUSE_MAX = 0.8, 2.5  # increased pause time
-SCROLLS_MIN, SCROLLS_MAX = 4, 7    # scroll movements per page
 DEBUG_INTERCEPT = os.getenv("DEBUG_INTERCEPT", "0") == "1"
 INTERCEPT_OUTPUT_ROOT = Path(os.getenv("INTERCEPT_OUTPUT_DIR", "user_data"))
 
 
 # ── helpers ──────────────────────────────────────────────────────────────
-
-
-async def human_delay(lo: float = MIN_WAIT, hi: float = MAX_WAIT) -> None:
-    """Sleep a random amount to look human."""
-    await asyncio.sleep(random.uniform(lo, hi))
-
-
-async def random_scroll(page) -> None:
-    """Scroll up and down randomly with natural behavior."""
-    # Drift mouse naturally to the center of the page content so wheel events hit the scrollable area
-    await HumanBehavior.natural_mouse_move(page, random.randint(400, 700), random.randint(350, 500))
-    await asyncio.sleep(random.uniform(0.2, 0.4))
-
-    num_scrolls = random.randint(SCROLLS_MIN, SCROLLS_MAX)
-    print(f"    📜 Scrolling {num_scrolls} times...")
-    for i in range(num_scrolls):
-        direction = random.choices(["down", "up"], weights=[0.8, 0.2])[0]  # Mostly scroll down
-        await HumanBehavior.smooth_scroll(page, direction)
-        await asyncio.sleep(random.uniform(SCROLL_PAUSE_MIN, SCROLL_PAUSE_MAX))
-
-        # Occasionally do idle mouse movement
-        if i % 4 == 0 and random.random() > 0.5:
-            await HumanBehavior.random_idle_movement(page)
-
-    # Sometimes hover over elements at the end
-    if random.random() > 0.4:
-        await HumanBehavior.hover_and_interact(page, "a, button, [role='button']")
-    print("    📜 Scrolling complete")
-
-
-async def go_home_and_simulate_reading(page) -> None:
-    """Navigate to LinkedIn home and simulate brief feed reading behavior."""
-    await page.goto(LINKEDIN_HOME, wait_until="domcontentloaded")
-    await dismiss_blocking_linkedin_popup(page)
-    await human_delay(2, 4)
-    print("    🏠 On home feed — simulating reading behavior…")
-    await HumanBehavior.simulate_reading(page)
-    await human_delay(1, 2)
 
 
 def fallback_slug_from_url(url: Optional[str]) -> Optional[str]:
@@ -106,232 +72,6 @@ def fallback_slug_from_url(url: Optional[str]) -> Optional[str]:
 def sanitize_for_filename(value: str) -> str:
     cleaned = re.sub(r"[^a-zA-Z0-9._-]+", "_", (value or "").strip())
     return cleaned.strip("_.")[:80] or "unknown"
-
-
-# ── core logic ───────────────────────────────────────────────────────────
-
-SEARCH_INPUT_SELECTOR = "input.search-global-typeahead__input"
-LINKEDIN_MODAL_SELECTORS = (
-    ".artdeco-modal",
-    ".artdeco-modal__content",
-    "[role='dialog']",
-)
-LINKEDIN_MODAL_CLOSE_SELECTORS = (
-    "button[aria-label='Dismiss']",
-    "button[aria-label='Close']",
-    "button[aria-label*='dismiss' i]",
-    "button[aria-label*='close' i]",
-    ".artdeco-modal__dismiss",
-    "[data-test-modal-close-btn]",
-)
-
-
-async def dismiss_blocking_linkedin_popup(page) -> bool:
-    """Dismiss a visible LinkedIn blocking modal if one appears."""
-    for modal_selector in LINKEDIN_MODAL_SELECTORS:
-        modal = page.locator(modal_selector).first
-        try:
-            if not await modal.is_visible():
-                continue
-        except Exception:
-            continue
-
-        for close_selector in LINKEDIN_MODAL_CLOSE_SELECTORS:
-            close_button = modal.locator(close_selector).first
-            try:
-                if not await close_button.is_visible():
-                    continue
-
-                box = await close_button.bounding_box()
-                if box:
-                    target_x = int(box["x"] + box["width"] / 2 + random.randint(-4, 4))
-                    target_y = int(box["y"] + box["height"] / 2 + random.randint(-4, 4))
-                    await HumanBehavior.natural_mouse_move(page, target_x, target_y)
-                    await asyncio.sleep(random.uniform(0.1, 0.3))
-
-                await close_button.click()
-                await asyncio.sleep(random.uniform(0.4, 0.9))
-                print("    ✕ Dismissed blocking LinkedIn popup")
-                return True
-            except Exception:
-                continue
-
-        try:
-            await page.keyboard.press("Escape")
-            await asyncio.sleep(random.uniform(0.4, 0.9))
-            if not await modal.is_visible():
-                print("    ✕ Dismissed blocking LinkedIn popup via Escape")
-                return True
-        except Exception:
-            continue
-
-    return False
-
-
-async def click_with_popup_recovery(page, locator, description: str) -> None:
-    """Click a locator, dismissing blocking popups and retrying once if needed."""
-    await dismiss_blocking_linkedin_popup(page)
-
-    last_exc = None
-    for attempt in range(2):
-        try:
-            if attempt == 1:
-                dismissed = await dismiss_blocking_linkedin_popup(page)
-                if dismissed:
-                    await human_delay(0.2, 0.5)
-            await locator.click()
-            return
-        except Exception as exc:
-            last_exc = exc
-
-    raise RuntimeError(f"Failed to click {description}: {last_exc}")
-
-
-async def use_search_bar(page, query: str) -> None:
-    """Type a query into LinkedIn's own search bar and press Enter."""
-    # Click the search input to focus it
-    try:
-        await page.wait_for_selector(SEARCH_INPUT_SELECTOR, timeout=10_000)
-    except Exception:
-        # Fallback: go to the feed so the search bar is present
-        await go_home_and_simulate_reading(page)
-        await page.wait_for_selector(SEARCH_INPUT_SELECTOR, timeout=10_000)
-
-    await dismiss_blocking_linkedin_popup(page)
-
-    search_box = page.locator(SEARCH_INPUT_SELECTOR)
-
-    # Move mouse naturally to the search box before clicking
-    box = await search_box.bounding_box()
-    if box:
-        target_x = int(box['x'] + box['width'] / 2 + random.randint(-10, 10))
-        target_y = int(box['y'] + box['height'] / 2 + random.randint(-3, 3))
-        await HumanBehavior.natural_mouse_move(page, target_x, target_y)
-        await asyncio.sleep(random.uniform(0.1, 0.3))
-
-    await click_with_popup_recovery(page, search_box, "LinkedIn search box")
-    await human_delay(0.3, 0.7)
-
-    # Clear any existing text
-    await page.keyboard.press("Meta+a")
-    await asyncio.sleep(random.uniform(0.1, 0.3))
-    await page.keyboard.press("Backspace")
-    await asyncio.sleep(random.uniform(0.2, 0.5))
-
-    # Type the query character by character
-    for ch in query:
-        await page.keyboard.type(ch, delay=random.randint(40, 170))
-    await human_delay(0.5, 1.2)
-
-    # Press Enter to search
-    await page.keyboard.press("Enter")
-    await page.wait_for_load_state("domcontentloaded")
-    await dismiss_blocking_linkedin_popup(page)
-    await human_delay(3, 6)
-
-    # Click the "People" filter so results are scoped to profiles
-    try:
-        people_btn_selector = 'button:has-text("People")'
-        people_btn = page.locator(people_btn_selector).first
-        await people_btn.wait_for(timeout=6_000)
-        await human_delay(0.3, 0.8)
-
-        # Move mouse naturally to the button, then click
-        box = await people_btn.bounding_box()
-        if box:
-            target_x = int(box['x'] + box['width'] / 2 + random.randint(-5, 5))
-            target_y = int(box['y'] + box['height'] / 2 + random.randint(-3, 3))
-            await HumanBehavior.natural_mouse_move(page, target_x, target_y)
-            await asyncio.sleep(random.uniform(0.1, 0.3))
-        await click_with_popup_recovery(page, people_btn, "People filter button")
-
-        await page.wait_for_load_state("domcontentloaded")
-        await dismiss_blocking_linkedin_popup(page)
-        await human_delay(2, 4)
-    except Exception:
-        pass  # might already be on People tab
-
-
-async def click_matching_profile(page, slug: Optional[str]) -> bool:
-    """Find and click a profile link in search results.
-
-    If *slug* is given, look for the link whose href contains that slug.
-    Otherwise fall back to clicking the first profile link.
-    Returns True if a profile was successfully clicked.
-    """
-    try:
-        await page.wait_for_selector('a[data-view-name="search-result-lockup-title"]', timeout=10_000)
-    except Exception:
-        return False
-
-    links = page.locator('a[data-view-name="search-result-lockup-title"]')
-    count = await links.count()
-
-    if slug:
-        slug_token = f"/in/{slug.lower()}"
-
-        # Try to find the exact matching profile
-        for idx in range(count):
-            href = (await links.nth(idx).get_attribute("href") or "").lower()
-            if (slug_token + "/") in href or (slug_token + "?") in href or href.rstrip("/").endswith(slug_token):
-                await human_delay(0.5, 1.5)
-                # Use natural click with mouse movement
-                box = await links.nth(idx).bounding_box()
-                if box:
-                    target_x = int(box['x'] + box['width'] / 2 + random.randint(-10, 10))
-                    target_y = int(box['y'] + box['height'] / 2 + random.randint(-10, 10))
-                    await HumanBehavior.natural_mouse_move(page, target_x, target_y)
-                    await asyncio.sleep(random.uniform(0.3, 0.7))
-                await dismiss_blocking_linkedin_popup(page)
-                await click_with_popup_recovery(page, links.nth(idx), "matching search result")
-                await page.wait_for_load_state("domcontentloaded")
-                await dismiss_blocking_linkedin_popup(page)
-                # Re-enable cursor after navigation
-                if DEBUG_CURSOR:
-                    await show_cursor(page)
-                return True
-
-        # Partial match (slug contained in href)
-        for idx in range(count):
-            href = (await links.nth(idx).get_attribute("href") or "").lower()
-            if slug in href:
-                await human_delay(0.5, 1.5)
-                # Use natural click with mouse movement
-                box = await links.nth(idx).bounding_box()
-                if box:
-                    target_x = int(box['x'] + box['width'] / 2 + random.randint(-10, 10))
-                    target_y = int(box['y'] + box['height'] / 2 + random.randint(-10, 10))
-                    await HumanBehavior.natural_mouse_move(page, target_x, target_y)
-                    await asyncio.sleep(random.uniform(0.3, 0.7))
-                await dismiss_blocking_linkedin_popup(page)
-                await click_with_popup_recovery(page, links.nth(idx), "partial-match search result")
-                await page.wait_for_load_state("domcontentloaded")
-                await dismiss_blocking_linkedin_popup(page)
-                # Re-enable cursor after navigation
-                if DEBUG_CURSOR:
-                    await show_cursor(page)
-                return True
-
-    # Fallback: click the first result
-    if count > 0:
-        await human_delay(0.5, 1.5)
-        # Use natural click with mouse movement
-        box = await links.first.bounding_box()
-        if box:
-            target_x = int(box['x'] + box['width'] / 2 + random.randint(-10, 10))
-            target_y = int(box['y'] + box['height'] / 2 + random.randint(-10, 10))
-            await HumanBehavior.natural_mouse_move(page, target_x, target_y)
-            await asyncio.sleep(random.uniform(0.3, 0.7))
-        await dismiss_blocking_linkedin_popup(page)
-        await click_with_popup_recovery(page, links.first, "first search result")
-        await page.wait_for_load_state("domcontentloaded")
-        await dismiss_blocking_linkedin_popup(page)
-        # Re-enable cursor after navigation
-        if DEBUG_CURSOR:
-            await show_cursor(page)
-        return True
-
-    return False
 
 
 def is_profile_api_response(url: str) -> bool:
@@ -483,7 +223,12 @@ async def scrape_person(page, name: str, slug: Optional[str] = None) -> None:
 
     try:
         # ── click into the matching profile ──
-        clicked = await click_matching_profile(page, slug)
+        clicked = await click_matching_profile(
+            page,
+            slug,
+            debug_cursor=DEBUG_CURSOR,
+            show_cursor_fn=show_cursor,
+        )
         if not clicked:
             print(f"    ⚠ Could not click into a profile for '{name}'. Skipping.")
             return

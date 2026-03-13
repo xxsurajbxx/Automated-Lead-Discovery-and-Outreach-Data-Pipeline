@@ -313,6 +313,24 @@ async def extract_profile_candidates_from_page(page) -> list[dict]:
     return candidates
 
 
+async def google_results_has_next_page(page) -> bool:
+    selectors = (
+        'a[aria-label="Next"]',
+        'a[aria-label="Next page"]',
+        'a#pnnext',
+    )
+
+    for selector in selectors:
+        try:
+            next_link = page.locator(selector).first
+            if await next_link.is_visible(timeout=1_500):
+                return True
+        except Exception:
+            continue
+
+    return False
+
+
 async def ensure_no_google_captcha(page, stage: str) -> None:
     current_url = (page.url or "").lower()
     if "google.com/sorry" in current_url or "recaptcha" in current_url:
@@ -412,6 +430,14 @@ async def collect_leads(limit: int, db_path: str, max_pages_per_query: int, cdp_
 
                     pages_checked += 1
                     if remaining <= 0:
+                        break
+
+                    has_next_page = await google_results_has_next_page(page)
+                    if not has_next_page:
+                        print(
+                            "  ↳ Fewer than the target number of Google result pages are available for this query; "
+                            "switching to a new randomized query"
+                        )
                         break
 
                     start += 10
