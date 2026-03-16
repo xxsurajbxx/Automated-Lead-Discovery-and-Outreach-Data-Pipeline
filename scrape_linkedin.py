@@ -58,6 +58,9 @@ CDP_ENDPOINT = os.getenv("CDP_ENDPOINT", os.getenv("CHROME_CDP_ENDPOINT", "http:
 DEBUG_INTERCEPT = os.getenv("DEBUG_INTERCEPT", "0") == "1"
 INTERCEPT_OUTPUT_ROOT = Path(os.getenv("INTERCEPT_OUTPUT_DIR", "user_data"))
 
+RANDOM_RUN_MIN_PROFILES=3
+RANDOM_RUN_MAX_PROFILES=5
+
 
 # ── helpers ──────────────────────────────────────────────────────────────
 
@@ -283,7 +286,10 @@ def load_people_from_db(conn: sqlite3.Connection) -> list[dict]:
             "slug": slug_val or None,
         })
 
-    return people
+    target_count = random.randint(RANDOM_RUN_MIN_PROFILES, RANDOM_RUN_MAX_PROFILES)
+    selected_count = min(target_count, len(people))
+
+    return people[:selected_count]
 
 
 def mark_scraped(conn: sqlite3.Connection, linkedin_url: str) -> None:

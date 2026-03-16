@@ -462,7 +462,7 @@ def parse_args() -> argparse.Namespace:
         "--limit",
         "-l",
         type=int,
-        default=10,
+        default=25,
         help="Number of new leads to collect (default: 10)",
     )
     parser.add_argument(

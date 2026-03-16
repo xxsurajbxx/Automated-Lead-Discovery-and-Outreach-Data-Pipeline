@@ -36,7 +36,6 @@ from typing import Any
 from env_utils import load_env_file
 from linkedin_common import (
     click_matching_profile,
-    click_with_popup_recovery,
     dismiss_blocking_linkedin_popup,
     go_home_and_simulate_reading,
     human_delay,
