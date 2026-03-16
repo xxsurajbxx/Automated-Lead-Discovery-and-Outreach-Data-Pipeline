@@ -27,6 +27,7 @@ import asyncio
 import os
 import random
 import re
+import shutil
 import sqlite3
 import sys
 from pathlib import Path
@@ -54,7 +55,8 @@ CDP_ENDPOINT = os.getenv("CDP_ENDPOINT", os.getenv("CHROME_CDP_ENDPOINT", "http:
 
 MIN_WAIT, MAX_WAIT = 2, 5
 
-TEMPORARY_TEST_SINGLE_RUN_DEFAULT = True
+RANDOM_RUN_MIN_PROFILES = 2
+RANDOM_RUN_MAX_PROFILES = 4
 
 CONNECTION_SUCCESS = 1
 CONNECTION_SKIP = -1
@@ -796,6 +798,34 @@ def mark_connection_result(conn: sqlite3.Connection, linkedin_url: str, value: i
     conn.commit()
 
 
+def delete_user_folder_for_slug(slug: str | None) -> tuple[bool, str]:
+    normalized_slug = (slug or "").strip().strip("/")
+    if not normalized_slug:
+        return False, "slug_missing"
+
+    target_dir = Path("user_data") / normalized_slug
+    if not target_dir.exists():
+        return False, f"not_found:{target_dir}"
+
+    if not target_dir.is_dir():
+        return False, f"not_a_directory:{target_dir}"
+
+    try:
+        shutil.rmtree(target_dir)
+        return True, f"deleted:{target_dir}"
+    except Exception as exc:
+        return False, f"delete_failed:{target_dir}: {exc}"
+
+
+def choose_profiles_for_run(leads: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int]:
+    if not leads:
+        return [], 0
+
+    target_count = random.randint(RANDOM_RUN_MIN_PROFILES, RANDOM_RUN_MAX_PROFILES)
+    selected_count = min(target_count, len(leads))
+    return leads[:selected_count], target_count
+
+
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
 def parse_args() -> argparse.Namespace:
@@ -816,11 +846,6 @@ def parse_args() -> argparse.Namespace:
         default=CDP_ENDPOINT,
         help="Chrome CDP endpoint (default: from env or http://127.0.0.1:9222)",
     )
-    parser.add_argument(
-        "--disable-temp-single-run",
-        action="store_true",
-        help="Disable TEMPORARY test mode and process all qualifying leads.",
-    )
     return parser.parse_args()
 
 
@@ -828,7 +853,6 @@ def parse_args() -> argparse.Namespace:
 
 async def main() -> int:
     args = parse_args()
-    temp_single_run_enabled = TEMPORARY_TEST_SINGLE_RUN_DEFAULT and not args.disable_temp_single_run
 
     if not args.db.exists():
         print(f"Database not found: {args.db}", file=sys.stderr)
@@ -836,10 +860,12 @@ async def main() -> int:
 
     conn = sqlite3.connect(str(args.db))
 
-    # Respect both --limit and --daily-limit; whichever is tighter wins.
+    # Respect both --limit and --daily-limit; whichever is tighter wins,
+    # but still fetch enough candidates for the random 2-4 selection.
     effective_limit = args.daily_limit
     if args.limit > 0:
         effective_limit = min(args.limit, args.daily_limit)
+    effective_limit = max(effective_limit, RANDOM_RUN_MAX_PROFILES)
 
     try:
         leads = fetch_leads_to_connect(conn, threshold=args.threshold, limit=effective_limit)
@@ -855,24 +881,18 @@ async def main() -> int:
 
     print(f"Qualifying leads: {len(leads)}")
 
-    if temp_single_run_enabled:
-        print("TEMPORARY TEST MODE ENABLED: listing all qualifying leads, then processing one and exiting.")
-        for idx, lead in enumerate(leads, start=1):
-            print(
-                f"  [{idx}] slug={lead.get('slug') or 'N/A'} | "
-                f"name={lead.get('name') or 'N/A'} | "
-                f"rating={lead.get('rating') or 'N/A'} | "
-                f"url={lead.get('linkedin_url') or 'N/A'}"
-            )
-        leads = leads[:1]
-        selected = leads[0]
+    leads, target_count = choose_profiles_for_run(leads)
+    print(
+        f"Selected for this run: {len(leads)} "
+        f"(random target={target_count}, min={RANDOM_RUN_MIN_PROFILES}, max={RANDOM_RUN_MAX_PROFILES})"
+    )
+    for idx, lead in enumerate(leads, start=1):
         print(
-            "TEMPORARY TEST MODE SELECTED: "
-            f"slug={selected.get('slug') or 'N/A'} | "
-            f"name={selected.get('name') or 'N/A'} | "
-            f"url={selected.get('linkedin_url') or 'N/A'}"
+            f"  [{idx}] slug={lead.get('slug') or 'N/A'} | "
+            f"name={lead.get('name') or 'N/A'} | "
+            f"rating={lead.get('rating') or 'N/A'} | "
+            f"url={lead.get('linkedin_url') or 'N/A'}"
         )
-        print("TEMPORARY TEST MODE: processing selected lead only, then quitting.")
 
     success_count = 0
     skip_count = 0
@@ -902,6 +922,11 @@ async def main() -> int:
                 success_count += 1
                 if linkedin_url:
                     mark_connection_result(conn, linkedin_url, CONNECTION_SUCCESS)
+                deleted, cleanup_detail = delete_user_folder_for_slug(lead.get("slug"))
+                if deleted:
+                    print(f"  🗑 Cleanup: {cleanup_detail}")
+                else:
+                    print(f"  ⚠ Cleanup skipped: {cleanup_detail}")
                 print(f"  ✅ {detail}")
             elif db_value == CONNECTION_SKIP:
                 skip_count += 1
