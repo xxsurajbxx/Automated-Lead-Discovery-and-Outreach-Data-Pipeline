@@ -200,10 +200,26 @@ async def scrape_person(page, name: str, slug: Optional[str] = None) -> None:
         await show_cursor(page)
 
     # Wait for the results container
-    try:
-        await page.wait_for_selector('[data-view-name="people-search-result"]', timeout=15_000)
-    except Exception:
-        print(f"    ⚠ Search results not found for '{name}'.")
+    # LinkedIn's DOM can change — try a few selectors before giving up.
+    tried = []
+    selectors_to_try = [
+        '[data-view-name="people-search-result"]',
+        'a[data-view-name="search-result-lockup-title"]',
+        'a[href*="/in/"]',
+    ]
+
+    found = False
+    for sel in selectors_to_try:
+        tried.append(sel)
+        try:
+            await page.wait_for_selector(sel, timeout=8_000)
+            found = True
+            break
+        except Exception:
+            continue
+
+    if not found:
+        print(f"    ⚠ Search results not found for '{name}'. Tried: {', '.join(tried)}")
 
     # ── human‑like scrolling on results ──
     await random_scroll(page)
